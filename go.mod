@@ -1,4 +1,4 @@
-module github.com/kloufuse/flog
+module github.com/kloudfuse/flog
 
 go 1.14
 

@@ -139,8 +139,7 @@ func AppendTags(format string, tags string, log string) string {
 }
 
 func NewLogWithTags(format string, t time.Time, tags string) string {
-	switch format {
-	case "filebeat":
+	if format == "filebeat" {
 		return NewFilebeatLogFormat(t, tags)
 	}
 

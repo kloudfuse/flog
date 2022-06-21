@@ -94,5 +94,5 @@ func ExampleNewFilebeatLogFormat() {
 	defer monkey.Unpatch(time.Now)
 
 	created := time.Now()
-	fmt.Println(NewFilebeatLogFormat(created))
+	fmt.Println(NewFilebeatLogFormat(created, "tag1,tag2"))
 }

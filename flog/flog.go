@@ -38,7 +38,7 @@ func Generate(option *Option) error {
 	if option.Forever {
 		for {
 			time.Sleep(delay)
-			log := NewLog(option.Format, created, option.Cardinality)
+			log := NewLogWithTags(option.Format, created, option.Cardinality)
 			_, _ = writer.Write([]byte(log + "\n"))
 			created = created.Add(interval)
 		}
@@ -48,7 +48,7 @@ func Generate(option *Option) error {
 		// Generates the logs until the certain number of lines is reached
 		for line := 0; line < option.Number; line++ {
 			time.Sleep(delay)
-			log := NewLog(option.Format, created, option.Cardinality)
+			log := NewLogWithTags(option.Format, created, option.Cardinality)
 			_, _ = writer.Write([]byte(log + "\n"))
 
 			if (option.Type != "stdout") && (option.SplitBy > 0) && (line > option.SplitBy*splitCount) {
@@ -67,7 +67,7 @@ func Generate(option *Option) error {
 		bytes := 0
 		for bytes < option.Bytes {
 			time.Sleep(delay)
-			log := NewLog(option.Format, created, option.Cardinality)
+			log := NewLogWithTags(option.Format, created, option.Cardinality)
 			_, _ = writer.Write([]byte(log + "\n"))
 
 			bytes += len(log)
@@ -113,8 +113,46 @@ func NewWriter(logType string, logFileName string) (io.WriteCloser, error) {
 	}
 }
 
+func AppendTags(format string, tags string, log string) string {
+	var sb strings.Builder
+	sb.WriteString(log)
+	var f func(s string)
+	switch format {
+	case "json":
+		f = func(t string) {
+			s := strings.Split(t, "=")
+			sb.WriteString(", \"" + s[0] + "\"")
+			sb.WriteString(":")
+			sb.WriteString("\"" + s[1] + "\"")
+		}
+	default:
+		f = func(t string) {
+			s := strings.Split(t, "=")
+			sb.WriteString(", \"" + s[0] + "\"")
+			sb.WriteString("=")
+			sb.WriteString("\"" + s[1] + "\"")
+		}
+	}
+
+	ParseTags(tags, f)
+	return sb.String()
+}
+
+func NewLogWithTags(format string, t time.Time, tags string) string {
+	switch format {
+	case "filebeat":
+		return NewFilebeatLogFormat(t, tags)
+	}
+
+	s := NewLog(format, t)
+	if len(tags) > 0 {
+		return AppendTags(format, tags, s)
+	}
+	return s
+}
+
 // NewLog creates a log for given format
-func NewLog(format string, t time.Time, tags string) string {
+func NewLog(format string, t time.Time) string {
 	switch format {
 	case "apache_common":
 		return NewApacheCommonLog(t)
@@ -129,11 +167,11 @@ func NewLog(format string, t time.Time, tags string) string {
 	case "common_log":
 		return NewCommonLogFormat(t)
 	case "json":
-		return NewJSONLogFormat(t, tags)
+		return NewJSONLogFormat(t)
 	case "logfmt":
-		return NewLogFmtLogFormat(t, tags)
+		return NewLogFmtLogFormat(t)
 	case "filebeat":
-		return NewFilebeatLogFormat(t, tags)
+		panic("filebeat format is not supported for NewLog; use NewLogWithTags")
 	default:
 		return ""
 	}

@@ -28,9 +28,9 @@ const (
 	// CommonLogFormat : {host} {user-identifier} {auth-user-id} [{datetime}] "{method} {request} {protocol}" {response-code} {bytes}
 	CommonLogFormat = "%s - %s [%s] \"%s %s %s\" %d %d"
 	// JSONLogFormat : {"host": "{host}", "user-identifier": "{user-identifier}", "datetime": "{datetime}", "method": "{method}", "request": "{request}", "protocol": "{protocol}", "status", {status}, "bytes": {bytes}, "referer": "{referer}"}
-	JSONLogFormat = `{"host":"%s", "user-identifier":"%s", "datetime":"%s", "method": "%s", "request": "%s", "protocol":"%s", "status":%d, "bytes":%d, "referer": "%s"%s}`
+	JSONLogFormat = `{"host":"%s", "user-identifier":"%s", "datetime":"%s", "method": "%s", "request": "%s", "protocol":"%s", "status":%d, "bytes":%d, "referer": "%s"}`
 	// LogFmtLogFormat : host={host} user={user-identifier} timestamp={datetime} method={method} request="{request}" protocol={protocol} status={status} bytes={bytes} referer="{referer}"
-	LogFmtLogFormat = `host="%s" user=%s timestamp=%s method=%s request="%s" protocol=%s status=%d bytes=%d referer="%s" %s`
+	LogFmtLogFormat = `host="%s" user=%s timestamp=%s method=%s request="%s" protocol=%s status=%d bytes=%d referer="%s"`
 	// FilebeatLogMsgFormat: host={host} user={user-identifier} timestamp={datetime} method={method} request="{request}" protocol={protocol} status={status} referer="{referer}
 	FilebeatLogMsgFormat = `host=%s user=%s timestamp=%s method=%s request=%s protocol=%s status=%d referer=%s`
 )
@@ -142,16 +142,7 @@ func parseTags(tags string, f func(s string)) {
 }
 
 // NewJSONLogFormat creates a log string with json log format
-func NewJSONLogFormat(t time.Time, tags string) string {
-
-	var sb strings.Builder
-	parseTags(tags, func(t string) {
-		s := strings.Split(t, "=")
-		sb.WriteString(", \"" + s[0] + "\"")
-		sb.WriteString(":")
-		sb.WriteString("\"" + s[1] + "\"")
-	})
-
+func NewJSONLogFormat(t time.Time) string {
 	return fmt.Sprintf(
 		JSONLogFormat,
 		gofakeit.IPv4Address(),
@@ -163,21 +154,11 @@ func NewJSONLogFormat(t time.Time, tags string) string {
 		gofakeit.StatusCode(),
 		gofakeit.Number(0, 30000),
 		gofakeit.URL(),
-		sb.String(),
 	)
 }
 
 // NewLogFmtLogFormat creates a log string with logfmt log format
-func NewLogFmtLogFormat(t time.Time, tags string) string {
-
-	var sb strings.Builder
-	parseTags(tags, func(t string) {
-		s := strings.Split(t, "=")
-		sb.WriteString(", \"" + s[0] + "\"")
-		sb.WriteString("=")
-		sb.WriteString("\"" + s[1] + "\"")
-	})
-
+func NewLogFmtLogFormat(t time.Time) string {
 	return fmt.Sprintf(
 		LogFmtLogFormat,
 		gofakeit.IPv4Address(),
@@ -189,7 +170,6 @@ func NewLogFmtLogFormat(t time.Time, tags string) string {
 		gofakeit.StatusCode(),
 		gofakeit.Number(0, 30000),
 		gofakeit.URL(),
-		sb.String(),
 	)
 }
 

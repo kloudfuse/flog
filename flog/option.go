@@ -174,12 +174,12 @@ func ParseSplitBy(splitBy int) (int, error) {
 
 func ParseNumTags(numTags int, cardinality string) (int, error) {
 	if numTags < 0 {
-		return 0, errors.New("numTags cannot be negative")
+		return 0, errors.New("num-tags cannot be negative")
 	}
 
 	l := strings.Split(cardinality, ",")
 	if len(l) != numTags {
-		return 0, errors.New("length of cardinality list doesn't match numTags")
+		return 0, errors.New("length of cardinality list doesn't match num-tags")
 	}
 
 	return numTags, nil
@@ -188,7 +188,10 @@ func ParseNumTags(numTags int, cardinality string) (int, error) {
 func ParseCardinality(cardinality string, format string) (string, error) {
 	if format == "filebeat" && strings.Contains(cardinality, "=") {
 		return "", errors.New("format is specified as filebeat; expected cardinality format is \"tag1,tag2,tag3...\"")
+	} else if format != "filebeat" && !strings.Contains(cardinality, "=") {
+		return "", errors.New("expected cardinality format \"tag1=value1,tag2=value2....\"")
 	}
+
 	return cardinality, nil
 }
 

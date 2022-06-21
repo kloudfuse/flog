@@ -134,13 +134,6 @@ func NewCommonLogFormat(t time.Time) string {
 	)
 }
 
-func parseTags(tags string, f func(s string)) {
-	l := strings.Split(tags, ",")
-	for _, t := range l {
-		f(t)
-	}
-}
-
 // NewJSONLogFormat creates a log string with json log format
 func NewJSONLogFormat(t time.Time) string {
 	return fmt.Sprintf(
@@ -204,7 +197,7 @@ func NewFilebeatLogFormat(t time.Time, tags string) string {
 	}
 
 	filebeatTags := []string{}
-	parseTags(tags, func(t string) {
+	ParseTags(tags, func(t string) {
 		filebeatTags = append(filebeatTags, t)
 	})
 

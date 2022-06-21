@@ -38,7 +38,7 @@ func Generate(option *Option) error {
 	if option.Forever {
 		for {
 			time.Sleep(delay)
-			log := NewLog(option.Format, created)
+			log := NewLog(option.Format, created, option.Cardinality)
 			_, _ = writer.Write([]byte(log + "\n"))
 			created = created.Add(interval)
 		}
@@ -48,7 +48,7 @@ func Generate(option *Option) error {
 		// Generates the logs until the certain number of lines is reached
 		for line := 0; line < option.Number; line++ {
 			time.Sleep(delay)
-			log := NewLog(option.Format, created)
+			log := NewLog(option.Format, created, option.Cardinality)
 			_, _ = writer.Write([]byte(log + "\n"))
 
 			if (option.Type != "stdout") && (option.SplitBy > 0) && (line > option.SplitBy*splitCount) {
@@ -67,7 +67,7 @@ func Generate(option *Option) error {
 		bytes := 0
 		for bytes < option.Bytes {
 			time.Sleep(delay)
-			log := NewLog(option.Format, created)
+			log := NewLog(option.Format, created, option.Cardinality)
 			_, _ = writer.Write([]byte(log + "\n"))
 
 			bytes += len(log)
@@ -114,7 +114,7 @@ func NewWriter(logType string, logFileName string) (io.WriteCloser, error) {
 }
 
 // NewLog creates a log for given format
-func NewLog(format string, t time.Time) string {
+func NewLog(format string, t time.Time, tags string) string {
 	switch format {
 	case "apache_common":
 		return NewApacheCommonLog(t)
@@ -129,9 +129,11 @@ func NewLog(format string, t time.Time) string {
 	case "common_log":
 		return NewCommonLogFormat(t)
 	case "json":
-		return NewJSONLogFormat(t)
+		return NewJSONLogFormat(t, tags)
 	case "logfmt":
-		return NewLogFmtLogFormat(t)
+		return NewLogFmtLogFormat(t, tags)
+	case "filebeat":
+		return NewFilebeatLogFormat(t, tags)
 	default:
 		return ""
 	}

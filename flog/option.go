@@ -27,6 +27,7 @@ Options:
                            - rfc5424
                            - json
                            - logfmt
+						   - filebeat
   -o, --output string      output filename. Path-like is allowed. (default "generated.log")
   -t, --type string        log output type. available types:
                            - stdout (default)
@@ -44,23 +45,27 @@ Options:
                            with "byte" option, the logs will be split whenever the maximum size in bytes is reached.
   -w, --overwrite          overwrite the existing log files.
   -l, --loop               loop output forever until killed.
+  -e, --num-tags            number of tags to include in the payload.
+  -c, --cardinality        key value pairs for all the tags.
 `
 
-var validFormats = []string{"apache_common", "apache_combined", "apache_error", "rfc3164", "rfc5424", "common_log", "json", "logfmt"}
+var validFormats = []string{"apache_common", "apache_combined", "apache_error", "rfc3164", "rfc5424", "common_log", "json", "logfmt", "filebeat"}
 var validTypes = []string{"stdout", "log", "gz"}
 
 // Option defines log generator options
 type Option struct {
-	Format    string
-	Output    string
-	Type      string
-	Number    int
-	Bytes     int
-	Sleep     time.Duration
-	Delay     time.Duration
-	SplitBy   int
-	Overwrite bool
-	Forever   bool
+	Format      string
+	Output      string
+	Type        string
+	Number      int
+	Bytes       int
+	Sleep       time.Duration
+	Delay       time.Duration
+	SplitBy     int
+	Overwrite   bool
+	Forever     bool
+	NumTags     int
+	Cardinality string
 }
 
 func init() {
@@ -82,16 +87,18 @@ func errorExit(err error) {
 
 func defaultOptions() *Option {
 	return &Option{
-		Format:    "apache_common",
-		Output:    "generated.log",
-		Type:      "stdout",
-		Number:    1000,
-		Bytes:     0,
-		Sleep:     0.0,
-		Delay:     0.0,
-		SplitBy:   0,
-		Overwrite: false,
-		Forever:   false,
+		Format:      "apache_common",
+		Output:      "generated.log",
+		Type:        "stdout",
+		Number:      1000,
+		Bytes:       0,
+		Sleep:       0.0,
+		Delay:       0.0,
+		SplitBy:     0,
+		Overwrite:   false,
+		Forever:     false,
+		NumTags:     10,
+		Cardinality: "tag1 = 1, tag2 = 2, tag3 = 3, tag4 = 4, tag5 = 5, tag6 = 6, tag7 = 7, tag8 = 8, tag9 = 9, tag10 = 10",
 	}
 }
 
@@ -165,6 +172,26 @@ func ParseSplitBy(splitBy int) (int, error) {
 	return splitBy, nil
 }
 
+func ParseNumTags(numTags int, cardinality string) (int, error) {
+	if numTags < 0 {
+		return 0, errors.New("numTags cannot be negative")
+	}
+
+	l := strings.Split(cardinality, ",")
+	if len(l) != numTags {
+		return 0, errors.New("length of cardinality list doesn't match numTags")
+	}
+
+	return numTags, nil
+}
+
+func ParseCardinality(cardinality string, format string) (string, error) {
+	if format == "filebeat" && strings.Contains(cardinality, "=") {
+		return "", errors.New("format is specified as filebeat; expected cardinality format is \"tag1,tag2,tag3...\"")
+	}
+	return cardinality, nil
+}
+
 // ParseOptions parses given parameters from command line
 func ParseOptions() *Option {
 	var err error
@@ -183,6 +210,8 @@ func ParseOptions() *Option {
 	splitBy := pflag.IntP("split", "p", opts.SplitBy, "Maximum number of lines or size of a log file")
 	overwrite := pflag.BoolP("overwrite", "w", false, "Overwrite the existing log files")
 	forever := pflag.BoolP("loop", "l", false, "Loop output forever until killed")
+	numTags := pflag.IntP("num-tags", "e", 10, "Number of tags to include with each payload")
+	cardinality := pflag.StringP("cardinality", "c", "", "Tag values to include in each payload")
 
 	pflag.Parse()
 
@@ -213,6 +242,12 @@ func ParseOptions() *Option {
 		errorExit(err)
 	}
 	if opts.SplitBy, err = ParseSplitBy(*splitBy); err != nil {
+		errorExit(err)
+	}
+	if opts.NumTags, err = ParseNumTags(*numTags, *cardinality); err != nil {
+		errorExit(err)
+	}
+	if opts.Cardinality, err = ParseCardinality(*cardinality, opts.Format); err != nil {
 		errorExit(err)
 	}
 	opts.Output = *output

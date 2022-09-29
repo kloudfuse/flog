@@ -1,8 +1,10 @@
 package flog
 
+import "strings"
+
 func containString(arr []string, str string) bool {
 	for _, s := range arr {
-		if s == str {
+		if strings.EqualFold(s, str) {
 			return true
 		}
 	}
